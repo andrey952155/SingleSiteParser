@@ -3,13 +3,13 @@ from dataclasses import dataclass, astuple
 
 
 @dataclass
-class Book:
+class Cfg:
     site: str = os.environ.get('gsite')
     login: str = os.environ.get('glogin')
     psw: str = os.environ.get('gpsw')
 
 
-if None in astuple(Book()):
+if None in astuple(Cfg()):
     raise 'domain, login, psw not found'
 
 
