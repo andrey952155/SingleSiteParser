@@ -8,6 +8,8 @@ from const import Cfg
 URL = f'https://{Cfg.site}'
 session = requests.Session()
 
+"""Для новой авторизации удали coockies_file"""
+
 
 def login():
     user_agent = fake_useragent.UserAgent().random
@@ -29,8 +31,8 @@ def request(link):
             session.cookies.update(pickle.load(f))
     except FileNotFoundError:
         login()
-    print(f'{URL}/{link}')
+    # print(f'{URL}/{link}')
     return session.get(f'{URL}/{link}').text
 
 
-print(request('education'))
+# print(request('education_new'))
