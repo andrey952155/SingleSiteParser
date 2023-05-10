@@ -104,7 +104,7 @@ class CourseParser(Course):
         r = request('api/v2/education/student')
         r = json.loads(r)
         for i in r['attendees'].values():
-            print(i['title'], i.get('progressItems'))
+            print(i['title'], i['id'], i.get('progressItems'))
 
     @staticmethod
     def show_download_courses():
