@@ -130,6 +130,25 @@ class CourseParser(Course):
 # CourseParser('8625428')
 
 
+print(f'Список всех доступных курсов - all \n'
+      f'Список уже скаченных курсов - download \n'
+      f'Скачать курс - id \n'
+      f'Удалить курс из базы - delete-id')
+
+
+letter = input('Введите: ')
+if letter.isdigit():
+    CourseParser(letter)
+elif 'delete-' in letter:
+    CourseParser.delete_course(letter.replace('delete-', ''))
+elif letter == 'all':
+    CourseParser.show_all_courses()
+elif letter == 'download':
+    CourseParser.show_download_courses()
+
+
+
+
 
 
 
