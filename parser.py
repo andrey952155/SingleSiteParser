@@ -3,6 +3,7 @@ import os
 
 from transliterate import translit
 import urllib.request
+from urllib.error import HTTPError, URLError
 from bs4 import BeautifulSoup as bs
 
 from auth import request, URL
@@ -22,8 +23,16 @@ class ContentParser(Content):
         session.commit()
 
     def download_file(self):
-        urllib.request.urlretrieve(self.url, f'{self.content_path}/{self.filename}')
-        print(f'Загрузка завершена - {self.filename}')
+        try:
+            urllib.request.urlretrieve(self.url, f'{self.content_path}/{self.filename}')
+        except FileNotFoundError as e:
+            print(e)
+        except HTTPError as e:
+            print(e)
+        except URLError as e:
+            print(e)
+        else:
+            print(f'Загрузка завершена - {self.filename}')
 
 
 class LessonParser(Lesson):
@@ -33,16 +42,21 @@ class LessonParser(Lesson):
         self.url = f'{prefix}/{lesson_id_gb}'
         r = request(self.url)
         soup = bs(r, "html.parser")
-        self.title = soup.find(class_='title').text
-        self.create_lesson_folder(course_path)
-        self.content_links: list[dict] = []
-        self.add_document_link(soup)
-        self.add_video_link(prefix, lesson_id_gb)
-        session.add(self)
-        session.commit()
+        try:
+            self.title = soup.find(class_='title').text
+        except AttributeError as e:
+            print(e)
+            print(r)
+        else:
+            self.create_lesson_folder(course_path)
+            self.content_links: list[dict] = []
+            self.add_document_link(soup)
+            self.add_video_link(prefix, lesson_id_gb)
+            session.add(self)
+            session.commit()
 
-        self.content_objects: list[ContentParser] = []
-        self.create_content_object()
+            self.content_objects: list[ContentParser] = []
+            self.create_content_object()
 
     def create_lesson_folder(self, course_path):
         dir_name = CourseParser.path_name_edit(self.title)
@@ -51,12 +65,14 @@ class LessonParser(Lesson):
         self.lesson_path = f'{course_path}{dir_name}'
 
     def add_document_link(self, soup):
+        """Добавляет в список загрузок ссылки на документы"""
         data = set(soup.find_all(class_='lesson-contents__download-row'))
         for i in data:
             if '.mp4' not in i.get('href'):
                 self.content_links.append({'title': i.text, 'link': i.get('href')})
 
     def add_video_link(self, prefix, lesson_id_gb):
+        """Добавляет в список загрузок ссылки на видео"""
         data = request(f'api/v2/{prefix}/{lesson_id_gb}/playlist')
         data = json.loads(data)
         data = data['playlist']
@@ -91,13 +107,19 @@ class CourseParser(Course):
 
     @staticmethod
     def path_name_edit(name: str) -> str:
-        return translit(name, language_code='ru', reversed=True).\
-            translate({ord(','): None, ord(':'): None, ord('.'): None, ord("'"): None, ord(' '): '_', ord('/'): '_'})
+        # print(name)
+        result = translit(name, language_code='ru', reversed=True).\
+            translate({ord(','): None, ord(':'): None, ord('.'): None, ord("'"): None, ord(' '): '_', ord('/'): '_',
+                      ord('\n'): '_', ord('\r'): '_', ord('\\'): '_', ord('"'): '_', ord('?'): '_', ord('\t'): '_'})
+        return result
 
     @staticmethod
     def create_folder(path, dir_name):
         if dir_name not in os.listdir(path):
-            os.mkdir(path + '/' + dir_name)
+            try:
+                os.mkdir(path + '/' + dir_name)
+            except OSError as e:
+                print(e)
 
     @staticmethod
     def show_all_courses():
@@ -133,21 +155,33 @@ class CourseParser(Course):
 print(f'Список всех доступных курсов - all \n'
       f'Список уже скаченных курсов - download \n'
       f'Скачать курс - id \n'
-      f'Удалить курс из базы - delete-id')
+      f'Удалить курс из базы - delete-id \n'
+      f'Выход - exit')
 
 
-letter = input('Введите: ')
-if letter.isdigit():
-    CourseParser(letter)
-elif 'delete-' in letter:
-    CourseParser.delete_course(letter.replace('delete-', ''))
-elif letter == 'all':
-    CourseParser.show_all_courses()
-elif letter == 'download':
-    CourseParser.show_download_courses()
+def start_program():
+    letter = input('Введите: ')
+    while True:
+        if letter.isdigit():
+            CourseParser(letter)
+            letter = input('Введите: ')
+        elif 'delete-' in letter:
+            CourseParser.delete_course(letter.replace('delete-', ''))
+            letter = input('Введите: ')
+        elif letter == 'all':
+            CourseParser.show_all_courses()
+            letter = input('Введите: ')
+        elif letter == 'download':
+            CourseParser.show_download_courses()
+            letter = input('Введите: ')
+        elif letter == 'exit':
+            break
+        else:
+            print('Не то ввели!')
+            letter = input('Введите: ')
 
 
-
+start_program()
 
 
 

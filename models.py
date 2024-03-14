@@ -17,7 +17,7 @@ class Course(Base):
     course_path = Column(String(100), nullable=False)
     url = Column(String(100), nullable=False)
     course_id_gb = Column(Integer, unique=True)
-    lessons = relationship("Lesson", cascade="all, delete")
+    lessons = relationship("Lesson", cascade="all, delete-orphan", passive_deletes=True)
 
     def __str__(self):
         return f'{self.course_id_gb} {self.title}'
@@ -29,8 +29,8 @@ class Lesson(Base):
     title = Column(String(700), nullable=False)
     lesson_path = Column(String(100), nullable=False)
     url = Column(String(100), nullable=False)
-    course = Column(Integer, ForeignKey('courses.id'))
-    content = relationship("Content", cascade="all, delete")
+    course = Column(Integer, ForeignKey('courses.id', ondelete="CASCADE"))
+    content = relationship("Content", cascade="all, delete-orphan", passive_deletes=True)
 
 
 class Content(Base):
@@ -40,7 +40,7 @@ class Content(Base):
     content_path = Column(String(100), nullable=False)
     filename = Column(String(100), nullable=False)
     url = Column(String(100), nullable=False)
-    lesson = Column(Integer, ForeignKey('lessons.id'))
+    lesson = Column(Integer, ForeignKey('lessons.id', ondelete="CASCADE"))
 
 
 # Base.metadata.create_all(engine)    # создание таблиц
